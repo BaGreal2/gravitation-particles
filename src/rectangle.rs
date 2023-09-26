@@ -2,19 +2,19 @@ use ggez::{
     graphics::{self, Canvas, Color},
     Context,
 };
-use nalgebra as na;
+use nalgebra::Vector2;
 
 use crate::{circle::Circle, particle::Particle};
 
 #[derive(Clone)]
 pub struct Rectangle {
-    pub top_left_pos: na::Vector2<f32>,
+    pub top_left_pos: Vector2<f32>,
     pub w: f32,
     pub h: f32,
 }
 
 impl Rectangle {
-    pub fn new(top_left_pos: na::Vector2<f32>, w: f32, h: f32) -> Self {
+    pub fn new(top_left_pos: Vector2<f32>, w: f32, h: f32) -> Self {
         Self { top_left_pos, w, h }
     }
 
@@ -41,15 +41,16 @@ impl Rectangle {
     }
 
     pub fn show(&self, canvas: &mut Canvas, ctx: &mut Context, color: Color) {
+let rect = graphics::Rect {
+        x: self.top_left_pos.x,
+        y: self.top_left_pos.y,
+        w: self.w,
+        h: self.h,
+    };
         let rect_mesh = graphics::Mesh::new_rectangle(
             ctx,
             graphics::DrawMode::Stroke(graphics::StrokeOptions::DEFAULT),
-            graphics::Rect {
-                x: self.top_left_pos.x,
-                y: self.top_left_pos.y,
-                w: self.w,
-                h: self.h,
-            },
+            rect,
             color,
         )
         .unwrap();

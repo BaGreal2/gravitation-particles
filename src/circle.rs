@@ -1,13 +1,13 @@
 use crate::particle::Particle;
-use nalgebra as na;
+use nalgebra::Vector2;
 
 pub struct Circle {
-    pub center: na::Vector2<f32>,
+    pub center: Vector2<f32>,
     pub radius: f32,
 }
 
 impl Circle {
-    pub fn new(center: na::Vector2<f32>, radius: f32) -> Self {
+    pub fn new(center: Vector2<f32>, radius: f32) -> Self {
         Self { center, radius }
     }
     pub fn contains(&self, particle: &Particle) -> bool {

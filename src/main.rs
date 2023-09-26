@@ -5,15 +5,15 @@ mod quadtree;
 mod rectangle;
 mod utils;
 
-use consts::{ HEIGHT, WIDTH};
+use consts::{HEIGHT, WIDTH};
 use ggez::event::{self, EventHandler};
 use ggez::graphics::{self, Color};
 use ggez::{conf, Context, ContextBuilder, GameResult};
-use nalgebra as na;
+use nalgebra::Vector2;
 use particle::Particle;
 use quadtree::QuadTree;
 use rectangle::Rectangle;
-use utils::{create_galaxy, detect_collisions, create_quadtree, calculate_new_position};
+use utils::{calculate_new_position, create_galaxy, create_quadtree, detect_collisions};
 
 fn main() {
     let window_setup = conf::WindowSetup::default().title("Gravity Particles");
@@ -37,45 +37,64 @@ struct MyGame {
     particles: Vec<Particle>,
 }
 
-
 impl MyGame {
     pub fn new(_ctx: &mut Context) -> MyGame {
-        let qt = QuadTree::new(Rectangle::new(na::Vector2::new(0.0, 0.0), WIDTH, HEIGHT));
+        let qt = QuadTree::new(Rectangle::new(Vector2::new(0.0, 0.0), WIDTH, HEIGHT));
         let mut particles: Vec<Particle> = Vec::new();
-        let sun_mass = 300000.0;
-        let radius: f32 = 500.0;
-        let center1 = na::Vector2::new(radius + 50.0, radius + 50.0);
+        // ----- GALAXY COLLISION ------
+        let sun_mass = 100000.0;
+        let radius: f32 = 200.0;
+        let center1 = Vector2::new(radius + 50.0, radius + 50.0);
         create_galaxy(
             &mut particles,
             center1,
             radius,
             sun_mass,
             0.01,
-            700,
-            Color::from_rgb(230, 191, 85),
+            300,
+            &mut Color::from_rgb(250, 219, 132),
         );
-        let center2 = na::Vector2::new(WIDTH - radius - 50.0, HEIGHT - radius - 50.0);
+        let center2 = Vector2::new(WIDTH - radius - 50.0, HEIGHT - radius - 50.0);
         create_galaxy(
             &mut particles,
             center2,
             radius,
             sun_mass,
             0.01,
-            700,
-            Color::from_rgb(85, 208, 230),
+            300,
+            &mut Color::from_rgb(85, 208, 230),
         );
-
-        particles.sort_by_key(|item| item.mass as i32);
-        // let center3 = na::Vector2::new(WIDTH/2.0, HEIGHT/2.0);
+        let center3 = Vector2::new(WIDTH - radius - 50.0, radius + 50.0);
+        create_galaxy(
+            &mut particles,
+            center3,
+            radius,
+            sun_mass,
+            0.01,
+            300,
+            &mut Color::from_rgb(132, 250, 205),
+        );
+        let center4 = Vector2::new(radius + 50.0, HEIGHT - radius - 50.0);
+        create_galaxy(
+            &mut particles,
+            center4,
+            radius,
+            sun_mass,
+            0.01,
+            300,
+            &mut Color::from_rgb(240, 149, 226),
+        );
         // create_galaxy(
         //     &mut particles,
-        //     center3,
-        //     radius,
-        //     sun_mass,
+        //     Vector2::new(WIDTH/2.0, HEIGHT/2.0),
+        //     400.0,
+        //     100000.0,
         //     0.01,
-        //     1000,
-        //     Color::from_rgb(85, 208, 230),
+        //     1200,
+        //     &mut Color::from_rgb(128, 43, 102),
         // );
+
+        particles.sort_by_key(|item| item.mass as i32);
 
         MyGame { qt, particles }
     }
@@ -92,10 +111,9 @@ impl EventHandler for MyGame {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let mut canvas = graphics::Canvas::from_frame(ctx, Color::BLACK);
+        let bg_color = Color::BLACK;
+        let mut canvas = graphics::Canvas::from_frame(ctx, bg_color);
         self.qt.show(&mut canvas, ctx, false);
         canvas.finish(ctx)
     }
 }
-
-

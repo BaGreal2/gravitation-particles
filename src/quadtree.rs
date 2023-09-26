@@ -4,7 +4,7 @@ use ggez::{
     graphics::{Canvas, Color},
     Context,
 };
-use nalgebra as na;
+use nalgebra::Vector2;
 
 #[derive(Clone)]
 pub struct QuadTree {
@@ -12,7 +12,7 @@ pub struct QuadTree {
     children: [Option<Box<QuadTree>>; 4],
     particle: Option<Particle>,
     mass: f32,
-    m_center_pos: na::Vector2<f32>,
+    m_center_pos: Vector2<f32>,
 }
 
 impl QuadTree {
@@ -23,28 +23,27 @@ impl QuadTree {
             children: [None, None, None, None],
             particle: None,
             mass: 0.0,
-            m_center_pos: na::Vector2::new(
+            m_center_pos: Vector2::new(
                 copy_bounds.top_left_pos.x + copy_bounds.w / 2.0,
                 copy_bounds.top_left_pos.y + copy_bounds.h / 2.0,
             ),
         }
     }
 
-    fn is_divided(&self) -> bool {
+   fn is_divided(&self) -> bool {
         !self.children.iter().all(|child| child.is_none())
     }
 
     fn subdivide(&mut self) {
         let (x, y) = (self.bounds.top_left_pos.x, self.bounds.top_left_pos.y);
         let (w, h) = (self.bounds.w, self.bounds.h);
-        let topleft = Rectangle::new(na::Vector2::new(x, y), w / 2.0, h / 2.0);
+        let topleft = Rectangle::new(Vector2::new(x, y), w / 2.0, h / 2.0);
         self.children[0] = Some(Box::new(QuadTree::new(topleft)));
-        let topright = Rectangle::new(na::Vector2::new(x + w / 2.0, y), w / 2.0, h / 2.0);
+        let topright = Rectangle::new(Vector2::new(x + w / 2.0, y), w / 2.0, h / 2.0);
         self.children[1] = Some(Box::new(QuadTree::new(topright)));
-        let bottomleft = Rectangle::new(na::Vector2::new(x, y + h / 2.0), w / 2.0, h / 2.0);
+        let bottomleft = Rectangle::new(Vector2::new(x, y + h / 2.0), w / 2.0, h / 2.0);
         self.children[2] = Some(Box::new(QuadTree::new(bottomleft)));
-        let bottomright =
-            Rectangle::new(na::Vector2::new(x + w / 2.0, y + h / 2.0), w / 2.0, h / 2.0);
+        let bottomright = Rectangle::new(Vector2::new(x + w / 2.0, y + h / 2.0), w / 2.0, h / 2.0);
         self.children[3] = Some(Box::new(QuadTree::new(bottomright)));
     }
 
@@ -82,7 +81,7 @@ impl QuadTree {
         if ratio < 0.5 {
             let attraction_force = particle.get_attraction_force(&Particle::new(
                 self.m_center_pos,
-                na::Vector2::new(0.0, 0.0),
+                Vector2::new(0.0, 0.0),
                 self.mass,
                 1.0,
                 None,
@@ -91,6 +90,7 @@ impl QuadTree {
             particle.net_force += attraction_force;
             return;
         }
+
 
         for leaf in self.children.as_mut() {
             if let Some(child) = leaf {
@@ -121,7 +121,7 @@ impl QuadTree {
         self.mass = mass_sum;
         center_x /= mass_sum;
         center_y /= mass_sum;
-        self.m_center_pos = na::Vector2::new(center_x, center_y);
+        self.m_center_pos = Vector2::new(center_x, center_y);
     }
 
     pub fn show(&self, canvas: &mut Canvas, ctx: &mut Context, show_bounds: bool) {

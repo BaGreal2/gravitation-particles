@@ -3,15 +3,15 @@ use ggez::{
     mint::Point2,
     Context,
 };
-use nalgebra as na;
+use nalgebra::Vector2;
 
 use crate::consts::G;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Particle {
-    pub pos: na::Vector2<f32>,
-    pub vel: na::Vector2<f32>,
-    pub net_force: na::Vector2<f32>,
+    pub pos: Vector2<f32>,
+    pub vel: Vector2<f32>,
+    pub net_force: Vector2<f32>,
     pub mass: f32,
     pub radius: f32,
     pub color: Option<Color>,
@@ -20,8 +20,8 @@ pub struct Particle {
 
 impl Particle {
     pub fn new(
-        pos: na::Vector2<f32>,
-        vel: na::Vector2<f32>,
+        pos: Vector2<f32>,
+        vel: Vector2<f32>,
         mass: f32,
         radius: f32,
         color: Option<Color>,
@@ -30,7 +30,7 @@ impl Particle {
         Self {
             pos,
             vel,
-            net_force: na::Vector2::new(0.0, 0.0),
+            net_force: Vector2::new(0.0, 0.0),
             mass,
             radius,
             color,
@@ -38,19 +38,17 @@ impl Particle {
         }
     }
 
-    pub fn get_attraction_force(&mut self, another_particle: &Particle) -> na::Vector2<f32> {
+    pub fn get_attraction_force(&mut self, another_particle: &Particle) -> Vector2<f32> {
         let r = self.pos.metric_distance(&another_particle.pos);
         let dir = (another_particle.pos - self.pos).normalize();
         let magnitude = G * ((self.mass * another_particle.mass) / r.powi(2));
         let force = dir * magnitude;
 
-        return force;
+        force
     }
 
-    pub fn get_distance_to(&self, object: &na::Vector2<f32>) -> f32 {
-        let x_dist = (object.x - self.pos.x).abs();
-        let y_dist = (object.y - self.pos.y).abs();
-        return (x_dist.powi(2) + y_dist.powi(2)).sqrt();
+    pub fn get_distance_to(&self, object: &Vector2<f32>) -> f32 {
+        f32::hypot(object.x - self.pos.x, object.y - self.pos.y)
     }
 
     pub fn show(&self, canvas: &mut Canvas, ctx: &mut Context) {
