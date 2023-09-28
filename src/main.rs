@@ -5,7 +5,7 @@ mod quadtree;
 mod rectangle;
 mod utils;
 
-use consts::{HEIGHT, LOWER_BOUND, MAX_ZOOM, UPPER_BOUND, WIDTH, WORLD_HEIGHT, WORLD_WIDTH};
+use consts::{HEIGHT, WIDTH, WORLD_HEIGHT, WORLD_WIDTH};
 use ggez::event::{self, EventHandler};
 use ggez::graphics::{self, Color};
 use ggez::input::keyboard::{KeyCode, KeyInput};
@@ -17,7 +17,7 @@ use quadtree::QuadTree;
 use rectangle::Rectangle;
 use utils::{
     calculate_new_position, create_galaxy, create_quadtree, screen_to_world_coords,
-    world_to_screen_coords, rename_images, convert_to_video, clean_cache_images
+     rename_images, convert_to_video, clean_cache_images, move_on_mouse, zoom_world, save_screen
 };
 use std::{fs, env};
 
@@ -79,7 +79,7 @@ impl MyGame {
         let mut particles: Vec<Particle> = Vec::new();
         create_galaxy(
             &mut particles,
-            screen_to_world_coords(Vector2::new(100.0, 100.0), origin, zoom),
+            screen_to_world_coords(Vector2::new(100.0, 100.0), &origin, zoom),
             Vector2::new(0.0, 0.0),
             200.0,
             10000.0,
@@ -89,7 +89,7 @@ impl MyGame {
         );
         create_galaxy(
             &mut particles,
-            screen_to_world_coords(Vector2::new(WIDTH - 100.0, HEIGHT - 100.0), origin, zoom),
+            screen_to_world_coords(Vector2::new(WIDTH - 100.0, HEIGHT - 100.0), &origin, zoom),
             Vector2::new(0.0, 0.0),
             200.0,
             10000.0,
@@ -119,33 +119,7 @@ impl EventHandler for MyGame {
         for i in 0..self.particles.len() {
             calculate_new_position(&mut self.particles[i], &mut self.qt);
         }
-        const DESIRED_FPS: u32 = 60;
-
-        while ctx.time.check_update_time(DESIRED_FPS) {
-            let mouse_position = ctx.mouse.position();
-
-            if mouse_position.x < LOWER_BOUND.x {
-                self.origin.x += 5.0;
-            } else if mouse_position.x > UPPER_BOUND.x {
-                self.origin.x -= 5.0;
-            }
-            if mouse_position.y < LOWER_BOUND.y {
-                self.origin.y += 5.0;
-            } else if mouse_position.y > UPPER_BOUND.y {
-                self.origin.y -= 5.0;
-            }
-
-            if -self.origin.x < 0.0 {
-                self.origin.x = 0.0;
-            } else if -self.origin.x + WIDTH / self.zoom > WORLD_WIDTH {
-                self.origin.x = WIDTH / self.zoom - WORLD_WIDTH;
-            }
-            if -self.origin.y < 0.0 {
-                self.origin.y = 0.0;
-            } else if -self.origin.y + HEIGHT / self.zoom > WORLD_HEIGHT {
-                self.origin.y = HEIGHT / self.zoom - WORLD_HEIGHT;
-            }
-        }
+        move_on_mouse(ctx, &mut self.origin, self.zoom);
         Ok(())
     }
 
@@ -157,11 +131,7 @@ impl EventHandler for MyGame {
 
         if self.recording {
             self.frame_count += 1;
-
-            let output_name = String::from("/image-cache/") + self.frame_count.to_string().as_str() + ".png";
-            self.screen
-                .image(ctx)
-                .encode(ctx, graphics::ImageEncodingFormat::Png, output_name)?;
+            save_screen(ctx, &mut self.screen, self.frame_count);
         }
         canvas.finish(ctx)?;
         ctx.gfx.present(&self.screen.image(ctx))?;
@@ -183,10 +153,11 @@ impl EventHandler for MyGame {
             }
             if keycode == KeyCode::S {
                 self.recording = false;
-                println!("Saving video to Downloads...");
+                println!("Saving video to prject folder (results)...");
                 rename_images(ctx);
                 convert_to_video(ctx);
                 clean_cache_images(ctx);
+                println!("Saved!");
             }
         }
         Ok(())
@@ -200,23 +171,7 @@ impl EventHandler for MyGame {
     }
 
     fn mouse_wheel_event(&mut self, ctx: &mut Context, _x: f32, y: f32) -> Result<(), GameError> {
-        let mouse_x = ctx.mouse.position().x;
-        let mouse_y = ctx.mouse.position().y;
-
-        let mut mouse_world =
-            screen_to_world_coords(Vector2::new(mouse_x, mouse_y), self.origin, self.zoom);
-        if y > 0.0 {
-            self.zoom *= 1.1;
-        } else if y < 0.0 {
-            self.zoom /= 1.1;
-        }
-        if self.zoom < MAX_ZOOM {
-            self.zoom = MAX_ZOOM;
-        }
-        mouse_world = world_to_screen_coords(mouse_world, self.origin, self.zoom);
-
-        self.origin.x += (mouse_x - mouse_world.x) / self.zoom;
-        self.origin.y += (mouse_y - mouse_world.y) / self.zoom;
+        zoom_world(ctx, &mut self.origin, &mut self.zoom, y);
 
         Ok(())
     }

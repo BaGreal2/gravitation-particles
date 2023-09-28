@@ -1,9 +1,9 @@
+use crate::utils::{screen_to_world_coords, world_to_screen_coords};
 use ggez::{
     graphics::{self, Canvas, Color},
     mint::Point2,
     Context,
 };
-use crate::utils::{world_to_screen_coords, screen_to_world_coords};
 use nalgebra::Vector2;
 
 use crate::consts::G;
@@ -66,11 +66,11 @@ impl Particle {
             ctx,
             graphics::DrawMode::fill(),
             Point2 {
-                x: world_to_screen_coords(self.pos, offset, zoom).x,
-                y: world_to_screen_coords(self.pos, offset, zoom).y,
+                x: world_to_screen_coords(self.pos, &offset, zoom).x,
+                y: world_to_screen_coords(self.pos, &offset, zoom).y,
             },
-            new_radius, 
-            0.1,        
+            new_radius,
+            0.1,
             self.color.unwrap(),
         )
         .unwrap();

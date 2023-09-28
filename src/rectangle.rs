@@ -54,8 +54,8 @@ impl Rectangle {
     ) {
         color.a = 0.3;
         let rect = graphics::Rect {
-            x: world_to_screen_coords(self.top_left_pos, offset, zoom).x,
-            y: world_to_screen_coords(self.top_left_pos, offset, zoom).y,
+            x: world_to_screen_coords(self.top_left_pos, &offset, zoom).x,
+            y: world_to_screen_coords(self.top_left_pos, &offset, zoom).y,
             w: self.w * zoom,
             h: self.h * zoom,
         };

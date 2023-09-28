@@ -1,9 +1,9 @@
-use crate::consts::{G, WORLD_HEIGHT, WORLD_WIDTH};
+use crate::consts::{G, HEIGHT, LOWER_BOUND, UPPER_BOUND, WIDTH, WORLD_HEIGHT, WORLD_WIDTH, MAX_ZOOM};
 use crate::particle::Particle;
 use crate::quadtree::QuadTree;
 use crate::rectangle::Rectangle;
 use chrono::{DateTime, Local};
-use ggez::graphics::Color;
+use ggez::graphics::{Color, ScreenImage, ImageEncodingFormat};
 use ggez::Context;
 use nalgebra::Vector2;
 use rand::Rng;
@@ -81,14 +81,14 @@ pub fn calculate_new_position(particle: &mut Particle, qt: &mut QuadTree) {
 
 pub fn world_to_screen_coords(
     world_coords: Vector2<f32>,
-    origin: Vector2<f32>,
+    origin: &Vector2<f32>,
     zoom: f32,
 ) -> Vector2<f32> {
     (origin + world_coords) * zoom
 }
 pub fn screen_to_world_coords(
     screen_coords: Vector2<f32>,
-    origin: Vector2<f32>,
+    origin: &Vector2<f32>,
     zoom: f32,
 ) -> Vector2<f32> {
     screen_coords / zoom - origin
@@ -162,4 +162,63 @@ pub fn clean_cache_images(ctx: &Context) {
         let full_path: PathBuf = file.as_ref().unwrap().path();
         let _ = fs::remove_file(full_path);
     }
+}
+
+pub fn move_on_mouse(ctx: &mut Context, origin: &mut Vector2<f32>, zoom: f32) {
+    const DESIRED_FPS: u32 = 60;
+
+    while ctx.time.check_update_time(DESIRED_FPS) {
+        let mouse_position = ctx.mouse.position();
+
+        if mouse_position.x < LOWER_BOUND.x {
+            origin.x += 5.0;
+        } else if mouse_position.x > UPPER_BOUND.x {
+            origin.x -= 5.0;
+        }
+        if mouse_position.y < LOWER_BOUND.y {
+            origin.y += 5.0;
+        } else if mouse_position.y > UPPER_BOUND.y {
+            origin.y -= 5.0;
+        }
+
+        if -origin.x < 0.0 {
+            origin.x = 0.0;
+        } else if -origin.x + WIDTH / zoom > WORLD_WIDTH {
+            origin.x = WIDTH / zoom - WORLD_WIDTH;
+        }
+        if -origin.y < 0.0 {
+            origin.y = 0.0;
+        } else if -origin.y + HEIGHT / zoom > WORLD_HEIGHT {
+            origin.y = HEIGHT / zoom - WORLD_HEIGHT;
+        }
+    }
+}
+
+pub fn zoom_world(ctx: &Context, origin: &mut Vector2<f32>, zoom: &mut f32, y_diff: f32) {
+    let mouse_x = ctx.mouse.position().x;
+    let mouse_y = ctx.mouse.position().y;
+
+    let mut mouse_world = screen_to_world_coords(Vector2::new(mouse_x, mouse_y), origin, *zoom);
+    if y_diff > 0.0 {
+        *zoom *= 1.1;
+    } else if y_diff < 0.0 {
+        *zoom /= 1.1;
+    }
+    if *zoom < MAX_ZOOM {
+        *zoom = MAX_ZOOM;
+    }
+    mouse_world = world_to_screen_coords(mouse_world, origin, *zoom);
+
+    origin.x += (mouse_x - mouse_world.x) / *zoom;
+    origin.y += (mouse_y - mouse_world.y) / *zoom;
+}
+
+pub fn save_screen(ctx: &Context, screen: &mut ScreenImage, frame_count: u32) {
+            let output_name = String::from("/image-cache/") + frame_count.to_string().as_str() + ".png";
+            match screen
+                .image(ctx)
+                .encode(ctx, ImageEncodingFormat::Png, output_name) {
+            Err(saving_err) => eprintln!("{}", saving_err),
+            _ => {}
+        }
 }
