@@ -3,6 +3,7 @@ use ggez::{
     mint::Point2,
     Context,
 };
+use crate::utils::{world_to_screen_coords, screen_to_world_coords};
 use nalgebra::Vector2;
 
 use crate::consts::G;
@@ -51,16 +52,25 @@ impl Particle {
         f32::hypot(object.x - self.pos.x, object.y - self.pos.y)
     }
 
-    pub fn show(&self, canvas: &mut Canvas, ctx: &mut Context) {
+    pub fn show(&self, canvas: &mut Canvas, ctx: &mut Context, offset: Vector2<f32>, zoom: f32) {
+        let mut new_radius: f32;
+        if self.radius < 1.0 {
+            new_radius = 0.25 * zoom; // Adjust the radius of the dot
+        } else {
+            new_radius = self.radius * zoom; // Adjust the radius of the dot
+        }
+        if new_radius < 0.25 {
+            new_radius = 0.25;
+        }
         let dot_mesh = graphics::Mesh::new_circle(
             ctx,
             graphics::DrawMode::fill(),
             Point2 {
-                x: self.pos.x,
-                y: self.pos.y,
+                x: world_to_screen_coords(self.pos, offset, zoom).x,
+                y: world_to_screen_coords(self.pos, offset, zoom).y,
             },
-            self.radius, // Adjust the radius of the dot
-            0.1,         // Line width (not applicable for a filled circle)
+            new_radius, 
+            0.1,        
             self.color.unwrap(),
         )
         .unwrap();

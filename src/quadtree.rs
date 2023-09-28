@@ -30,7 +30,7 @@ impl QuadTree {
         }
     }
 
-   fn is_divided(&self) -> bool {
+    fn is_divided(&self) -> bool {
         !self.children.iter().all(|child| child.is_none())
     }
 
@@ -91,7 +91,6 @@ impl QuadTree {
             return;
         }
 
-
         for leaf in self.children.as_mut() {
             if let Some(child) = leaf {
                 child.calculate_force(particle);
@@ -124,21 +123,28 @@ impl QuadTree {
         self.m_center_pos = Vector2::new(center_x, center_y);
     }
 
-    pub fn show(&self, canvas: &mut Canvas, ctx: &mut Context, show_bounds: bool) {
+    pub fn show(
+        &self,
+        canvas: &mut Canvas,
+        ctx: &mut Context,
+        offset: Vector2<f32>,
+        zoom: f32,
+        show_bounds: bool,
+    ) {
         if show_bounds {
-            self.bounds.show(canvas, ctx, Color::WHITE);
+            self.bounds.show(canvas, ctx, offset, zoom, &mut Color::WHITE);
         }
 
         for leaf in self.children.as_ref() {
             match leaf {
-                Some(existent_leaf) => existent_leaf.show(canvas, ctx, show_bounds),
+                Some(existent_leaf) => existent_leaf.show(canvas, ctx, offset, zoom, show_bounds),
                 None => {}
             }
         }
 
         match &self.particle {
             Some(existent_particle) => {
-                existent_particle.show(canvas, ctx);
+                existent_particle.show(canvas, ctx, offset, zoom);
             }
             None => {}
         }

@@ -4,7 +4,11 @@ use ggez::{
 };
 use nalgebra::Vector2;
 
-use crate::{circle::Circle, particle::Particle};
+use crate::{
+    circle::Circle,
+    particle::Particle,
+    utils::{screen_to_world_coords, world_to_screen_coords},
+};
 
 #[derive(Clone)]
 pub struct Rectangle {
@@ -40,18 +44,26 @@ impl Rectangle {
         distance_squared <= (circle.radius * circle.radius)
     }
 
-    pub fn show(&self, canvas: &mut Canvas, ctx: &mut Context, color: Color) {
-let rect = graphics::Rect {
-        x: self.top_left_pos.x,
-        y: self.top_left_pos.y,
-        w: self.w,
-        h: self.h,
-    };
+    pub fn show(
+        &self,
+        canvas: &mut Canvas,
+        ctx: &mut Context,
+        offset: Vector2<f32>,
+        zoom: f32,
+        color: &mut Color,
+    ) {
+        color.a = 0.3;
+        let rect = graphics::Rect {
+            x: world_to_screen_coords(self.top_left_pos, offset, zoom).x,
+            y: world_to_screen_coords(self.top_left_pos, offset, zoom).y,
+            w: self.w * zoom,
+            h: self.h * zoom,
+        };
         let rect_mesh = graphics::Mesh::new_rectangle(
             ctx,
             graphics::DrawMode::Stroke(graphics::StrokeOptions::DEFAULT),
             rect,
-            color,
+            *color,
         )
         .unwrap();
 

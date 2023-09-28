@@ -1,2 +1,5 @@
+.DS_Store
+src/.DS_Store
 /target
+src/results
 /.idea

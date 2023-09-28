@@ -5,15 +5,21 @@ mod quadtree;
 mod rectangle;
 mod utils;
 
-use consts::{HEIGHT, WIDTH};
+use consts::{HEIGHT, LOWER_BOUND, MAX_ZOOM, UPPER_BOUND, WIDTH, WORLD_HEIGHT, WORLD_WIDTH};
 use ggez::event::{self, EventHandler};
 use ggez::graphics::{self, Color};
+use ggez::input::keyboard::{KeyCode, KeyInput};
+use ggez::GameError;
 use ggez::{conf, Context, ContextBuilder, GameResult};
 use nalgebra::Vector2;
 use particle::Particle;
 use quadtree::QuadTree;
 use rectangle::Rectangle;
-use utils::{calculate_new_position, create_galaxy, create_quadtree, detect_collisions};
+use utils::{
+    calculate_new_position, create_galaxy, create_quadtree, screen_to_world_coords,
+    world_to_screen_coords, rename_images, convert_to_video, clean_cache_images
+};
+use std::{fs, env};
 
 fn main() {
     let window_setup = conf::WindowSetup::default().title("Gravity Particles");
@@ -27,93 +33,191 @@ fn main() {
         .build()
         .expect("aieee, could not create ggez context!");
 
+    match ctx.fs.create_dir("/image-cache") {
+        Ok(_) => println!("Created initial cache folder"),
+        Err(creating_error) => eprintln!("Error creating folder: {:?}", creating_error),
+    }
+    let directory_name = "results";
+    let current_dir = env::current_dir().expect("Failed to get current directory");
+    let new_directory_path = current_dir.join(directory_name);
+    match fs::create_dir(&new_directory_path) {
+        Ok(_) => {
+            println!("Created initial results folder");
+        }
+        Err(e) => {
+            eprintln!("Error creating directory: {}", e);
+        }
+    }
+
     let my_game = MyGame::new(&mut ctx);
 
     event::run(ctx, event_loop, my_game);
 }
 
 struct MyGame {
+    screen: graphics::ScreenImage,
     qt: QuadTree,
     particles: Vec<Particle>,
+    keysdown: Vec<KeyCode>,
+    origin: Vector2<f32>,
+    zoom: f32,
+    frame_count: u32,
+    recording: bool,
 }
 
 impl MyGame {
-    pub fn new(_ctx: &mut Context) -> MyGame {
-        let qt = QuadTree::new(Rectangle::new(Vector2::new(0.0, 0.0), WIDTH, HEIGHT));
+    pub fn new(ctx: &mut Context) -> MyGame {
+        let origin = Vector2::new(0.0, 0.0);
+        let zoom = 0.5;
+        let screen =
+            graphics::ScreenImage::new(ctx, graphics::ImageFormat::Rgba8UnormSrgb, 1., 1., 1);
+        let qt = QuadTree::new(Rectangle::new(
+            Vector2::new(0.0, 0.0),
+            WORLD_WIDTH,
+            WORLD_HEIGHT,
+        ));
         let mut particles: Vec<Particle> = Vec::new();
-        // ----- GALAXY COLLISION ------
-        let sun_mass = 100000.0;
-        let radius: f32 = 200.0;
-        let center1 = Vector2::new(radius + 50.0, radius + 50.0);
         create_galaxy(
             &mut particles,
-            center1,
-            radius,
-            sun_mass,
-            0.01,
-            300,
-            &mut Color::from_rgb(250, 219, 132),
+            screen_to_world_coords(Vector2::new(100.0, 100.0), origin, zoom),
+            Vector2::new(0.0, 0.0),
+            200.0,
+            10000.0,
+            0.001,
+            1000,
+            &mut Color::from_rgb(255, 0, 0),
         );
-        let center2 = Vector2::new(WIDTH - radius - 50.0, HEIGHT - radius - 50.0);
         create_galaxy(
             &mut particles,
-            center2,
-            radius,
-            sun_mass,
-            0.01,
-            300,
-            &mut Color::from_rgb(85, 208, 230),
+            screen_to_world_coords(Vector2::new(WIDTH - 100.0, HEIGHT - 100.0), origin, zoom),
+            Vector2::new(0.0, 0.0),
+            200.0,
+            10000.0,
+            0.001,
+            1000,
+            &mut Color::from_rgb(0, 255, 0),
         );
-        let center3 = Vector2::new(WIDTH - radius - 50.0, radius + 50.0);
-        create_galaxy(
-            &mut particles,
-            center3,
-            radius,
-            sun_mass,
-            0.01,
-            300,
-            &mut Color::from_rgb(132, 250, 205),
-        );
-        let center4 = Vector2::new(radius + 50.0, HEIGHT - radius - 50.0);
-        create_galaxy(
-            &mut particles,
-            center4,
-            radius,
-            sun_mass,
-            0.01,
-            300,
-            &mut Color::from_rgb(240, 149, 226),
-        );
-        // create_galaxy(
-        //     &mut particles,
-        //     Vector2::new(WIDTH/2.0, HEIGHT/2.0),
-        //     400.0,
-        //     100000.0,
-        //     0.01,
-        //     1200,
-        //     &mut Color::from_rgb(128, 43, 102),
-        // );
 
         particles.sort_by_key(|item| item.mass as i32);
 
-        MyGame { qt, particles }
+        MyGame {
+            screen,
+            qt,
+            particles,
+            keysdown: Vec::new(),
+            origin,
+            zoom,
+            frame_count: 0,
+            recording: false,
+        }
     }
 }
 
 impl EventHandler for MyGame {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
         self.qt = create_quadtree(&self.particles);
         for i in 0..self.particles.len() {
             calculate_new_position(&mut self.particles[i], &mut self.qt);
         }
-        detect_collisions(&mut self.particles, &self.qt);
+        const DESIRED_FPS: u32 = 60;
+
+        while ctx.time.check_update_time(DESIRED_FPS) {
+            let mouse_position = ctx.mouse.position();
+
+            if mouse_position.x < LOWER_BOUND.x {
+                self.origin.x += 5.0;
+            } else if mouse_position.x > UPPER_BOUND.x {
+                self.origin.x -= 5.0;
+            }
+            if mouse_position.y < LOWER_BOUND.y {
+                self.origin.y += 5.0;
+            } else if mouse_position.y > UPPER_BOUND.y {
+                self.origin.y -= 5.0;
+            }
+
+            if -self.origin.x < 0.0 {
+                self.origin.x = 0.0;
+            } else if -self.origin.x + WIDTH / self.zoom > WORLD_WIDTH {
+                self.origin.x = WIDTH / self.zoom - WORLD_WIDTH;
+            }
+            if -self.origin.y < 0.0 {
+                self.origin.y = 0.0;
+            } else if -self.origin.y + HEIGHT / self.zoom > WORLD_HEIGHT {
+                self.origin.y = HEIGHT / self.zoom - WORLD_HEIGHT;
+            }
+        }
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let bg_color = Color::BLACK;
-        let mut canvas = graphics::Canvas::from_frame(ctx, bg_color);
-        self.qt.show(&mut canvas, ctx, false);
-        canvas.finish(ctx)
+        let mut canvas = graphics::Canvas::from_screen_image(ctx, &mut self.screen, bg_color);
+        self.qt
+            .show(&mut canvas, ctx, self.origin, self.zoom, false);
+
+        if self.recording {
+            self.frame_count += 1;
+
+            let output_name = String::from("/image-cache/") + self.frame_count.to_string().as_str() + ".png";
+            self.screen
+                .image(ctx)
+                .encode(ctx, graphics::ImageEncodingFormat::Png, output_name)?;
+        }
+        canvas.finish(ctx)?;
+        ctx.gfx.present(&self.screen.image(ctx))?;
+        Ok(())
+    }
+    fn key_down_event(
+        &mut self,
+        ctx: &mut Context,
+        keyinput: KeyInput,
+        _repeat: bool,
+    ) -> Result<(), GameError> {
+        if let Some(keycode) = keyinput.keycode {
+            self.keysdown.push(keycode);
+            self.keysdown.dedup_by_key(|x| *x);
+
+            if keycode == KeyCode::R {
+                self.recording = true;
+                println!("Recording!");
+            }
+            if keycode == KeyCode::S {
+                self.recording = false;
+                println!("Saving video to Downloads...");
+                rename_images(ctx);
+                convert_to_video(ctx);
+                clean_cache_images(ctx);
+            }
+        }
+        Ok(())
+    }
+
+    fn key_up_event(&mut self, _ctx: &mut Context, keyinput: KeyInput) -> Result<(), GameError> {
+        if let Some(keycode) = keyinput.keycode {
+            self.keysdown.retain(|&x| x != keycode);
+        }
+        Ok(())
+    }
+
+    fn mouse_wheel_event(&mut self, ctx: &mut Context, _x: f32, y: f32) -> Result<(), GameError> {
+        let mouse_x = ctx.mouse.position().x;
+        let mouse_y = ctx.mouse.position().y;
+
+        let mut mouse_world =
+            screen_to_world_coords(Vector2::new(mouse_x, mouse_y), self.origin, self.zoom);
+        if y > 0.0 {
+            self.zoom *= 1.1;
+        } else if y < 0.0 {
+            self.zoom /= 1.1;
+        }
+        if self.zoom < MAX_ZOOM {
+            self.zoom = MAX_ZOOM;
+        }
+        mouse_world = world_to_screen_coords(mouse_world, self.origin, self.zoom);
+
+        self.origin.x += (mouse_x - mouse_world.x) / self.zoom;
+        self.origin.y += (mouse_y - mouse_world.y) / self.zoom;
+
+        Ok(())
     }
 }
