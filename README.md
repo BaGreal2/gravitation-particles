@@ -18,7 +18,7 @@ Usage is pretty simple:
 
 - In `consts.rs` you can adjust window and world resolution as well as some other params
 
-- In `main.rs` you can create "galaxies" using the `create_galaxy()` function or bu just inserting particles into particles vector
+- In `main.rs` you can create "galaxies" using the `create_galaxy()` function or by just inserting particles into particles vector
 
 - After program is in run, you can see fps in the window title
 
