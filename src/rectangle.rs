@@ -4,11 +4,7 @@ use ggez::{
 };
 use nalgebra::Vector2;
 
-use crate::{
-    circle::Circle,
-    particle::Particle,
-    utils::{screen_to_world_coords, world_to_screen_coords},
-};
+use crate::{particle::Particle, utils::world_to_screen_coords};
 
 #[derive(Clone)]
 pub struct Rectangle {
@@ -29,19 +25,12 @@ impl Rectangle {
             && self.top_left_pos.y + self.h > particle.pos.y
     }
 
-    pub fn intersects_circle(&self, circle: &Circle) -> bool {
-        let closest_x = (circle.center.x)
-            .max(self.top_left_pos.x)
-            .min(self.top_left_pos.x + self.w);
-        let closest_y = (circle.center.y)
-            .max(self.top_left_pos.y)
-            .min(self.top_left_pos.y + self.h);
-
-        let distance_x = circle.center.x - closest_x;
-        let distance_y = circle.center.y - closest_y;
-
-        let distance_squared = (distance_x * distance_x) + (distance_y * distance_y);
-        distance_squared <= (circle.radius * circle.radius)
+    pub fn intersects(&self, rect: &Self) -> bool {
+        let up = rect.top_left_pos.y + rect.h < self.top_left_pos.y;
+        let down = rect.top_left_pos.y > self.top_left_pos.y + self.h;
+        let left = rect.top_left_pos.x + rect.w < self.top_left_pos.x;
+        let right = rect.top_left_pos.x > self.top_left_pos.x + self.w;
+        !(up || down || left || right)
     }
 
     pub fn show(

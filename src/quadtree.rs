@@ -1,5 +1,5 @@
+use crate::particle::Particle;
 use crate::rectangle::Rectangle;
-use crate::{circle::Circle, particle::Particle};
 use ggez::{
     graphics::{Canvas, Color},
     Context,
@@ -129,42 +129,53 @@ impl QuadTree {
         ctx: &mut Context,
         offset: Vector2<f32>,
         zoom: f32,
+        particles_to_draw: &Vec<&Particle>,
         show_bounds: bool,
     ) {
         if show_bounds {
-            self.bounds.show(canvas, ctx, offset, zoom, &mut Color::WHITE);
+            self.bounds.show(
+                canvas,
+                ctx,
+                offset,
+                zoom,
+                &mut Color::from_rgb(255, 255, 255),
+            );
         }
 
         for leaf in self.children.as_ref() {
             match leaf {
-                Some(existent_leaf) => existent_leaf.show(canvas, ctx, offset, zoom, show_bounds),
+                Some(existent_leaf) => {
+                    existent_leaf.show(canvas, ctx, offset, zoom, particles_to_draw, show_bounds)
+                }
                 None => {}
             }
         }
 
         match &self.particle {
             Some(existent_particle) => {
-                existent_particle.show(canvas, ctx, offset, zoom);
+                if particles_to_draw.contains(&existent_particle) {
+                    existent_particle.show(canvas, ctx, offset, zoom);
+                }
             }
             None => {}
         }
     }
 
-    pub fn query(&self, circle: &Circle) -> Vec<&Particle> {
+    pub fn query(&self, rect: &Rectangle) -> Vec<&Particle> {
         let mut results = Vec::new();
-        if !self.bounds.intersects_circle(circle) {
+        if !self.bounds.intersects(rect) {
             return results;
         }
 
         if let Some(particle) = &self.particle {
-            if circle.contains(particle) {
+            if rect.contains(particle) {
                 results.push(particle);
             }
         }
         if self.is_divided() {
             for child in self.children.iter() {
                 if let Some(child) = child {
-                    results.extend(child.query(circle));
+                    results.extend(child.query(rect));
                 }
             }
         }

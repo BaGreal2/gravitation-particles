@@ -1,9 +1,11 @@
-use crate::consts::{G, HEIGHT, LOWER_BOUND, UPPER_BOUND, WIDTH, WORLD_HEIGHT, WORLD_WIDTH, MAX_ZOOM};
+use crate::consts::{
+    G, HEIGHT, LOWER_BOUND, MAX_ZOOM, UPPER_BOUND, WIDTH, WORLD_HEIGHT, WORLD_WIDTH,
+};
 use crate::particle::Particle;
 use crate::quadtree::QuadTree;
 use crate::rectangle::Rectangle;
 use chrono::{DateTime, Local};
-use ggez::graphics::{Color, ScreenImage, ImageEncodingFormat};
+use ggez::graphics::{Color, ImageEncodingFormat, ScreenImage};
 use ggez::Context;
 use nalgebra::Vector2;
 use rand::Rng;
@@ -127,7 +129,7 @@ pub fn convert_to_video(ctx: &Context) {
     let mut cmd = Command::new("ffmpeg")
         .args([
             "-framerate",
-            "25",
+            "60",
             "-pattern_type",
             "glob",
             "-i",
@@ -214,11 +216,12 @@ pub fn zoom_world(ctx: &Context, origin: &mut Vector2<f32>, zoom: &mut f32, y_di
 }
 
 pub fn save_screen(ctx: &Context, screen: &mut ScreenImage, frame_count: u32) {
-            let output_name = String::from("/image-cache/") + frame_count.to_string().as_str() + ".png";
-            match screen
-                .image(ctx)
-                .encode(ctx, ImageEncodingFormat::Png, output_name) {
-            Err(saving_err) => eprintln!("{}", saving_err),
-            _ => {}
-        }
+    let output_name = String::from("/image-cache/") + frame_count.to_string().as_str() + ".png";
+    match screen
+        .image(ctx)
+        .encode(ctx, ImageEncodingFormat::Png, output_name)
+    {
+        Err(saving_err) => eprintln!("{}", saving_err),
+        _ => {}
+    }
 }

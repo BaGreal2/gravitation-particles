@@ -1,11 +1,10 @@
-mod circle;
 mod consts;
 mod particle;
 mod quadtree;
 mod rectangle;
 mod utils;
 
-use consts::{HEIGHT, WIDTH, WORLD_HEIGHT, WORLD_WIDTH};
+use consts::{HEIGHT, MAX_ZOOM, WIDTH, WORLD_HEIGHT, WORLD_WIDTH};
 use ggez::event::{self, EventHandler};
 use ggez::graphics::{self, Color};
 use ggez::input::keyboard::{KeyCode, KeyInput};
@@ -15,11 +14,11 @@ use nalgebra::Vector2;
 use particle::Particle;
 use quadtree::QuadTree;
 use rectangle::Rectangle;
+use std::{env, fs};
 use utils::{
-    calculate_new_position, create_galaxy, create_quadtree, screen_to_world_coords,
-     rename_images, convert_to_video, clean_cache_images, move_on_mouse, zoom_world, save_screen
+    calculate_new_position, clean_cache_images, convert_to_video, create_galaxy, create_quadtree,
+    move_on_mouse, rename_images, save_screen, screen_to_world_coords, zoom_world,
 };
-use std::{fs, env};
 
 fn main() {
     let window_setup = conf::WindowSetup::default().title("Gravity Particles");
@@ -40,13 +39,16 @@ fn main() {
     let directory_name = "results";
     let current_dir = env::current_dir().expect("Failed to get current directory");
     let new_directory_path = current_dir.join(directory_name);
-    match fs::create_dir(&new_directory_path) {
-        Ok(_) => {
-            println!("Created initial results folder");
-        }
-        Err(e) => {
-            eprintln!("Error creating directory: {}", e);
-        }
+    match fs::metadata(&new_directory_path) {
+        Ok(_) => println!("Results folder already exists"),
+        Err(_) => match fs::create_dir(&new_directory_path) {
+            Ok(_) => {
+                println!("Created initial results folder");
+            }
+            Err(e) => {
+                eprintln!("Error creating directory: {}", e);
+            }
+        },
     }
 
     let my_game = MyGame::new(&mut ctx);
@@ -68,7 +70,7 @@ struct MyGame {
 impl MyGame {
     pub fn new(ctx: &mut Context) -> MyGame {
         let origin = Vector2::new(0.0, 0.0);
-        let zoom = 0.5;
+        let zoom = MAX_ZOOM;
         let screen =
             graphics::ScreenImage::new(ctx, graphics::ImageFormat::Rgba8UnormSrgb, 1., 1., 1);
         let qt = QuadTree::new(Rectangle::new(
@@ -80,22 +82,32 @@ impl MyGame {
         create_galaxy(
             &mut particles,
             screen_to_world_coords(Vector2::new(100.0, 100.0), &origin, zoom),
-            Vector2::new(0.0, 0.0),
-            200.0,
+            Vector2::new(0.0, 0.7),
+            25.0,
             10000.0,
             0.001,
-            1000,
+            500,
             &mut Color::from_rgb(255, 0, 0),
         );
         create_galaxy(
             &mut particles,
-            screen_to_world_coords(Vector2::new(WIDTH - 100.0, HEIGHT - 100.0), &origin, zoom),
-            Vector2::new(0.0, 0.0),
-            200.0,
+            screen_to_world_coords(Vector2::new(WIDTH - 100.0, 100.0), &origin, zoom),
+            Vector2::new(-0.7, 0.0),
+            25.0,
             10000.0,
             0.001,
-            1000,
+            500,
             &mut Color::from_rgb(0, 255, 0),
+        );
+        create_galaxy(
+            &mut particles,
+            screen_to_world_coords(Vector2::new(WIDTH / 2.0, HEIGHT - 150.0), &origin, zoom),
+            Vector2::new(0.7, 0.0),
+            25.0,
+            10000.0,
+            0.001,
+            500,
+            &mut Color::from_rgb(0, 0, 255),
         );
 
         particles.sort_by_key(|item| item.mass as i32);
@@ -126,13 +138,30 @@ impl EventHandler for MyGame {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let bg_color = Color::BLACK;
         let mut canvas = graphics::Canvas::from_screen_image(ctx, &mut self.screen, bg_color);
-        self.qt
-            .show(&mut canvas, ctx, self.origin, self.zoom, false);
+        let draw_query_area = Rectangle::new(
+            screen_to_world_coords(Vector2::new(0.0, 0.0), &self.origin, self.zoom),
+            WIDTH / self.zoom,
+            HEIGHT / self.zoom,
+        );
+        let particles_to_draw = self.qt.query(&draw_query_area);
+        self.qt.show(
+            &mut canvas,
+            ctx,
+            self.origin,
+            self.zoom,
+            &particles_to_draw,
+            false,
+        );
 
+        let fps = (ctx.time.fps() as u32).to_string();
+        let mut recording_title = "";
         if self.recording {
             self.frame_count += 1;
             save_screen(ctx, &mut self.screen, self.frame_count);
+            recording_title = "Recording..."
         }
+        ctx.gfx
+            .set_window_title(format!("FPS: {} {}", fps.as_str(), recording_title).as_str());
         canvas.finish(ctx)?;
         ctx.gfx.present(&self.screen.image(ctx))?;
         Ok(())

@@ -1,9 +1,9 @@
 use nalgebra::Vector2;
-pub const WIDTH: f32 = 1024.0;
-pub const HEIGHT: f32 = 1024.0;
-pub const WORLD_WIDTH: f32 = 2048.0;
-pub const WORLD_HEIGHT: f32 = 2048.0;
-pub const MAX_ZOOM: f32 = WIDTH/WORLD_WIDTH;
+pub const WIDTH: f32 = 512.0;
+pub const HEIGHT: f32 = 512.0;
+pub const WORLD_WIDTH: f32 = 512.0;
+pub const WORLD_HEIGHT: f32 = 512.0;
+pub const MAX_ZOOM: f32 = WIDTH / WORLD_WIDTH;
 pub const MOUSE_AREA: f32 = 100.0;
 pub const LOWER_BOUND: Vector2<f32> = Vector2::new(MOUSE_AREA, MOUSE_AREA);
 pub const UPPER_BOUND: Vector2<f32> = Vector2::new(WIDTH - MOUSE_AREA, HEIGHT - MOUSE_AREA);

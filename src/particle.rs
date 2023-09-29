@@ -1,4 +1,4 @@
-use crate::utils::{screen_to_world_coords, world_to_screen_coords};
+use crate::utils::world_to_screen_coords;
 use ggez::{
     graphics::{self, Canvas, Color},
     mint::Point2,
