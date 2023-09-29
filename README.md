@@ -2,7 +2,7 @@
 
 A Barnes-Hut implementation of n-body gravitation simulation in Rust.
 
-<img title="" src="https://github.com/Katsutoshii/barnes-hut-rs/main/1.gif" alt="10k-10k-collision.gif" data-align="center">
+<img title="" src="https://github.com/BaGreal2/gravitation-particles/blob/main/1.gif?raw=true" alt="10k-10k-collision.gif" data-align="center">
 
 # Running the project
 
