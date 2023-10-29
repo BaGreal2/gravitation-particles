@@ -5,7 +5,7 @@ use crate::particle::Particle;
 use crate::quadtree::QuadTree;
 use crate::rectangle::Rectangle;
 use chrono::{DateTime, Local};
-use ggez::graphics::{Color, ImageEncodingFormat, ScreenImage};
+use ggez::graphics::{ImageEncodingFormat, ScreenImage};
 use ggez::Context;
 use nalgebra::Vector2;
 use rand::Rng;
@@ -14,12 +14,27 @@ use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
-fn random_in_circle(radius: f32, center: Vector2<f32>) -> Vector2<f32> {
+fn random_in_circle(radius: f32, padding: f32, center: Vector2<f32>) -> Vector2<f32> {
     let mut rng = rand::thread_rng();
     let angle = rng.gen_range(0.0..2.0 * std::f32::consts::PI);
-    let distance = rng.gen_range(10.0..radius);
+    let distance = rng.gen_range(padding..radius);
 
     Vector2::new(distance * angle.cos(), distance * angle.sin()) + center
+}
+
+pub fn spawn_circle(
+    particles: &mut Vec<Particle>,
+    center: Vector2<f32>,
+    radius: f32,
+    particle_mass: f32,
+    particles_amount: i32,
+) {
+    for i in 0..particles_amount {
+        let pos = random_in_circle(radius, 0.0, center);
+        let new_particle =
+            Particle::new(pos, Vector2::default(), particle_mass, 0.00001, i as usize);
+        particles.push(new_particle);
+    }
 }
 
 pub fn create_galaxy(
@@ -30,21 +45,14 @@ pub fn create_galaxy(
     sun_mass: f32,
     particle_mass: f32,
     particles_amount: i32,
-    particles_color: &mut Color,
 ) {
     for i in 0..particles_amount {
-        let pos = random_in_circle(radius, center);
+        let pos = random_in_circle(radius, 2.0, center);
         let distance_to_center = pos.metric_distance(&center);
         let orbital_vel = ((G * sun_mass) / distance_to_center).sqrt();
         let dir = Vector2::new(pos.y - center.y, center.x - pos.x).normalize();
-        let new_particle = Particle::new(
-            pos,
-            dir * orbital_vel,
-            particle_mass,
-            0.00001,
-            Some(*particles_color),
-            i as usize,
-        );
+        let new_particle =
+            Particle::new(pos, dir * orbital_vel, particle_mass, 0.00001, i as usize);
         particles.push(new_particle);
     }
 
@@ -53,7 +61,6 @@ pub fn create_galaxy(
         initial_vel,
         sun_mass,
         1.5,
-        Some(*particles_color),
         particles_amount as usize,
     );
     particles.push(sun);
@@ -74,6 +81,7 @@ pub fn create_quadtree(particles: &Vec<Particle>) -> QuadTree {
 pub fn calculate_new_position(particle: &mut Particle, qt: &mut QuadTree) {
     particle.net_force = Vector2::new(0.0, 0.0);
     qt.calculate_force(particle);
+    // println!("{:?}", borrowed.net_force);
 
     let acceleration = particle.net_force / particle.mass;
     particle.vel += acceleration;

@@ -11,3 +11,11 @@ ggez = "0.9.3"
 image = "0.24.7"
 nalgebra = "0.32.3"
 rand = "0.8.5"
+rayon = "1.8.0"
+
+[profile.release]
+opt-level = 3
+overflow-checks = false
+lto = true
+codegen-unit = 1
+-Ctarget-cpu = "native"
