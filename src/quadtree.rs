@@ -5,7 +5,7 @@ use ggez::{
     Context,
 };
 use nalgebra::Vector2;
-use rayon::prelude::*;
+// use rayon::prelude::*;
 
 #[derive(Clone)]
 pub struct QuadTree {
@@ -39,13 +39,9 @@ impl QuadTree {
         let (x, y) = (self.bounds.top_left_pos.x, self.bounds.top_left_pos.y);
         let (w, h) = (self.bounds.w, self.bounds.h);
         let topleft = Rectangle::new(Vector2::new(x, y), w / 2.0, h / 2.0);
-        // children[0] = Box::new(QuadTree::new(topleft));
         let topright = Rectangle::new(Vector2::new(x + w / 2.0, y), w / 2.0, h / 2.0);
-        // children[1] = Box::new(QuadTree::new(topright));
         let bottomleft = Rectangle::new(Vector2::new(x, y + h / 2.0), w / 2.0, h / 2.0);
-        // children[2] = Box::new(QuadTree::new(bottomleft));
         let bottomright = Rectangle::new(Vector2::new(x + w / 2.0, y + h / 2.0), w / 2.0, h / 2.0);
-        // children[3] = Box::new(QuadTree::new(bottomright));
         self.children = Some([
             Box::new(QuadTree::new(topleft)),
             Box::new(QuadTree::new(topright)),
@@ -82,7 +78,7 @@ impl QuadTree {
     pub fn calculate_force(&mut self, particle: &mut Particle) {
         if !self.is_divided() {
             if let Some(existent_particle) = &self.particle {
-                if existent_particle.pos != particle.pos {
+                if existent_particle.index != particle.index {
                     let attraction_force =
                         particle.get_attraction_force(&self.particle.as_ref().unwrap());
                     particle.net_force += attraction_force;
@@ -98,7 +94,7 @@ impl QuadTree {
                 Vector2::new(0.0, 0.0),
                 self.mass,
                 1.0,
-                10000,
+                1000000,
             ));
             particle.net_force += attraction_force;
             return;

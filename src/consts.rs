@@ -8,4 +8,4 @@ pub const MOUSE_AREA: f32 = 100.0;
 pub const LOWER_BOUND: Vector2<f32> = Vector2::new(MOUSE_AREA, MOUSE_AREA);
 pub const UPPER_BOUND: Vector2<f32> = Vector2::new(WIDTH - MOUSE_AREA, HEIGHT - MOUSE_AREA);
 pub const G: f32 = 0.04;
-pub const SOFTENING: f32 = 3.0;
+pub const SOFTENING: f32 = 2.5;

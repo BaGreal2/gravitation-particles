@@ -63,9 +63,9 @@ impl Particle {
     ) {
         let mut new_radius: f32;
         if self.radius < 1.0 {
-            new_radius = 0.25 * zoom; // Adjust the radius of the dot
+            new_radius = 0.25 * zoom;
         } else {
-            new_radius = self.radius * zoom; // Adjust the radius of the dot
+            new_radius = self.radius * zoom;
         }
         if new_radius < 0.25 {
             new_radius = 0.25;
@@ -92,7 +92,7 @@ impl Particle {
             },
             new_radius,
             0.1,
-            new_color, // self.color.unwrap(),
+            new_color,
         )
         .unwrap();
 
