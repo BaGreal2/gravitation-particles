@@ -84,40 +84,40 @@ impl MyGame {
             WORLD_HEIGHT,
         ))));
         let mut particles: Vec<Particle> = Vec::new();
-        create_galaxy(
-            &mut particles,
-            screen_to_world_coords(Vector2::new(410.0, 410.0), &origin, zoom),
-            Vector2::new(0.01, 0.0),
-            50.0,
-            1000.0,
-            0.0001,
-            5000,
-        );
-        create_galaxy(
-            &mut particles,
-            screen_to_world_coords(Vector2::new(WIDTH - 410.0, HEIGHT - 410.0), &origin, zoom),
-            Vector2::new(-0.01, 0.0),
-            50.0,
-            1000.0,
-            0.0001,
-            5000,
-        );
         // create_galaxy(
         //     &mut particles,
-        //     screen_to_world_coords(Vector2::new(WIDTH / 2.0, HEIGHT / 2.0), &origin, zoom),
-        //     Vector2::new(0.0, 0.0),
-        //     100.0,
+        //     screen_to_world_coords(Vector2::new(410.0, 410.0), &origin, zoom),
+        //     Vector2::new(0.01, 0.0),
+        //     50.0,
         //     1000.0,
         //     0.0001,
-        //     4000,
+        //     5000,
         // );
+        // create_galaxy(
+        //     &mut particles,
+        //     screen_to_world_coords(Vector2::new(WIDTH - 410.0, HEIGHT - 410.0), &origin, zoom),
+        //     Vector2::new(-0.01, 0.0),
+        //     50.0,
+        //     1000.0,
+        //     0.0001,
+        //     5000,
+        // );
+        create_galaxy(
+            &mut particles,
+            screen_to_world_coords(Vector2::new(WIDTH / 2.0, HEIGHT / 2.0), &origin, zoom),
+            Vector2::new(0.0, 0.0),
+            100.0,
+            1000.0,
+            0.0001,
+            2000,
+        );
 
         // spawn_circle(
         //     &mut particles,
         //     screen_to_world_coords(Vector2::new(WIDTH / 2.0, HEIGHT / 2.0), &origin, zoom),
         //     120.0,
         //     3.0,
-        //     5000,
+        //     4000,
         // );
         // spawn_circle(
         //     &mut particles,

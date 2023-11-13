@@ -2,7 +2,7 @@
 
 A Barnes-Hut implementation of n-body gravitation simulation in Rust.
 
-<img title="" src="https://github.com/BaGreal2/gravitation-particles/blob/main/1.gif?raw=true" alt="10k-10k-collision.gif" data-align="center">
+![Gravitation Particles Demo](https://github.com/BaGreal2/gravitation-particles/blob/main/1.gif?raw=true)
 
 # Running the project
 
@@ -18,7 +18,7 @@ Usage is pretty simple:
 
 - In `consts.rs` you can adjust window and world resolution as well as some other params
 
-- In `main.rs` you can create "galaxies" using the `create_galaxy()` function or by just inserting particles into particles vector
+- In `main.rs` you can create "galaxies" using the `create_galaxy()` or `spawn_circle()` functions or by just inserting particles into particles vector
 
 - After program is in run, you can see fps in the window title
 

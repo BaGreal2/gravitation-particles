@@ -81,6 +81,7 @@ impl QuadTree {
                 if existent_particle.index != particle.index {
                     let attraction_force =
                         particle.get_attraction_force(&self.particle.as_ref().unwrap());
+                    // let attraction_force = self.particle.unwrap().get_attraction_force(particle);
                     particle.net_force += attraction_force;
                 }
             }
